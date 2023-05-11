@@ -1,0 +1,43 @@
+name: pytest Action
+description: Setup Python, install dependencies in given requirements.txt files, and run pytest
+
+inputs:
+  python-version:
+    description: Version of python to setup
+    default: '3.10'
+    required: true
+  requirements-txt:
+    description: Relative path to requirements.txt file. Wildcards can be submitted as well
+    default: null
+    required: true
+  build-command:
+    description: Build command to be executed prior to running unit tests.
+    default: null
+    required: false
+  coverage-args:
+    description: Additional arguments passed to coverage run, before invoking pytest
+    default: null
+    required: false
+  pytest-args:
+    description: Additional arguments passed to pytest.
+    default: -v
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python version ${{ inputs.python-version }}
+      uses: open-reading-frame/setup-python-action@main
+      with:
+        python-version: ${{ inputs.python-version }}
+        requirements-txt: ${{ inputs.requirements-txt }}
+        build-command: ${{ inputs.build-command }}
+        packages: pytest pytest-cov pytest-xdist[psutil]
+    - name: Run pytest and capture code coverage
+      run: pytest --cov --junitxml=pytest-test-report.xml -n logical ${{ inputs.pytest-args }}
+      shell: bash
+    - name: Archive test and coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-reports
+        path: 'pytest-*-report.xml'
